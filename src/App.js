@@ -1,16 +1,28 @@
 import { useEffect, useState } from "react";
 
 function App() {
+  const [station, setStation] = useState("");
   const [aqi, setAqi] = useState(null);
-  const [city, setCity] = useState("");
+  const [inputCity, setInputCity] = useState("");
 
-  useEffect(() => {
-    fetch("https://api.waqi.info/feed/shanghai/?token=demo")
+  const fetchAQI = (cityName) => {
+    fetch(`https://api.waqi.info/feed/${cityName}/?token=demo`)
       .then((res) => res.json())
       .then((data) => {
-        setAqi(data.data.aqi);
-        setCity(data.data.city.name);
+        if (data.status === "ok") {
+          setAqi(data.data.aqi);
+          setStation(data.data.city.name); // ACTUAL station
+        } else {
+          alert("City not found or no data available");
+        }
+      })
+      .catch(() => {
+        alert("Error fetching AQI data");
       });
+  };
+
+  useEffect(() => {
+    fetchAQI("shanghai");
   }, []);
 
   const getAqiStatus = (aqi) => {
@@ -21,15 +33,44 @@ function App() {
     return "Hazardous ☠️";
   };
 
+  const getBackgroundColor = (aqi) => {
+    if (aqi <= 50) return "#9cff9c";
+    if (aqi <= 100) return "#ffff99";
+    if (aqi <= 200) return "#ffb366";
+    if (aqi <= 300) return "#ff6666";
+    return "#b30000";
+  };
+
   return (
-    <div style={{ padding: "40px", fontFamily: "Arial" }}>
+    <div
+      style={{
+        padding: "40px",
+        fontFamily: "Arial",
+        backgroundColor: aqi ? getBackgroundColor(aqi) : "white",
+        minHeight: "100vh",
+      }}
+    >
       <h1>Air Quality Visualizer</h1>
+
+      <input
+        type="text"
+        placeholder="Enter city name"
+        value={inputCity}
+        onChange={(e) => setInputCity(e.target.value)}
+        style={{ padding: "8px", marginRight: "10px" }}
+      />
+
+      <button onClick={() => fetchAQI(inputCity.trim().toLowerCase())}>
+        Search
+      </button>
+
+      <hr />
 
       {aqi === null ? (
         <p>Loading AQI data...</p>
       ) : (
         <>
-          <h2>City: {city}</h2>
+          <h2>Monitoring Station: {station}</h2>
           <h2>AQI: {aqi}</h2>
           <h3>Status: {getAqiStatus(aqi)}</h3>
         </>
